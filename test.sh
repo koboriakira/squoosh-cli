@@ -37,7 +37,19 @@ function copy_to_workdir()
 
 function optimize()
 {
-  docker run -it --rm -v $WORKDIR:/var squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /var /var/$1
+  local filename=$1
+  local ext=$2
+
+  if [ $ext = "jpg" ]; then
+    docker run -it --rm -v $WORKDIR:/var squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /var /var/$filename
+  elif [ $ext = "png" ]; then
+    docker run -it --rm -v $WORKDIR:/var squoosh-cli squoosh-cli --oxipng '{quality:30}' -d /var /var/$filename
+  else
+    echo "Error! jpg,png以外の画像ファイルは対応していません"
+    exit 1
+    # NOTE: jpg,png以外の画像ファイル、webp形式に変換したいが、うまく動かないことのほうが多そう
+    # docker run -it --rm -v $WORKDIR:/var squoosh-cli squoosh-cli --webp auto -d /var /var/$filename
+  fi
 }
 
 function move_to_originaldir()
@@ -61,7 +73,7 @@ ext=${filename##*.} #拡張子
 copy_to_workdir $dirname $filename
 
 # 変換
-optimize $filename
+optimize $filename $ext
 
 # ファイルをコピーし、ファイル名のsuffixに「_squoosh」を付与
 move_to_originaldir $dirname $basename $ext
