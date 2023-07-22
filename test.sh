@@ -14,9 +14,9 @@ function check_workdir() {
 }
 
 function validate(){
-  # 第1引数が指定されていない場合はエラー
-  if [ $# -ne 1 ]; then
-    echo "Error! 最適化したいファイルを指定してください"
+  # 引き数がひとつも指定されていない場合はエラー
+  if [ $# -eq 0 ]; then
+    echo "Error! 引数にファイルを指定してください"
     exit 1
   fi
 
@@ -24,6 +24,14 @@ function validate(){
   if [ ! -e $1 ]; then
     echo "Error! 指定されたファイルが存在しません"
     exit 1
+  fi
+
+  # 第2引数は`-f`もしくは`--force`のみ許可
+  if [ $# -eq 2 ]; then
+    if [ $2 != "-f" ] && [ $2 != "--force" ]; then
+      echo "Error! 第2引数は`-f`もしくは`--force`のみ許可されています"
+      exit 1
+    fi
   fi
 }
 
@@ -54,13 +62,21 @@ function optimize()
 
 function move_to_originaldir()
 {
-  # ファイルをコピーし、ファイル名のsuffixに「_squoosh」を付与
-  copy_file_path=$1/${2}_squoosh.${3}
+  dirname=$1
+  basename=$2
+  ext=$3
+  force_update=$4
+
+  # force_updateがfalseの場合はファイル名のsuffixに「_squoosh」を付与
+  if [ $force_update = false ]; then
+    basename=${basename}_squoosh
+  fi
+  copy_file_path=$dirname/${basename}.${ext}
   echo "move $WORK_FILE_PATH to $copy_file_path"
   mv -f $WORK_FILE_PATH $copy_file_path
 }
 
-validate $1
+validate $1 $2
 check_workdir
 
 # ファイル名を取得
@@ -69,11 +85,19 @@ filename=$(basename $1) #ファイル名
 basename=${filename%.*} #拡張子を除いたファイル名
 ext=${filename##*.} #拡張子
 
+# 上書きフラグ(bool)を取得
+force_update=false
+if [ $# -eq 2 ]; then
+  if [ $2 = "-f" ] || [ $2 = "--force" ]; then
+    force_update=true
+  fi
+fi
+
 # 指定されたファイルをworkdirにコピー
 copy_to_workdir $dirname $filename
 
 # 変換
 optimize $filename $ext
 
-# ファイルをコピーし、ファイル名のsuffixに「_squoosh」を付与
-move_to_originaldir $dirname $basename $ext
+# workdirのファイルを元のディレクトリに移動
+move_to_originaldir $dirname $basename $ext $force_update
