@@ -9,7 +9,7 @@ docker pull koboriakira/squoosh-cli
 ```
 
 ```
-docker run -it --rm -v {画像ファイルを含むディレクトリ}:/var koboriakira/squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /var /var/{画像ファイル}
+docker run --rm -v {画像ファイルを含むディレクトリ}:/var koboriakira/squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /var /var/{画像ファイル}
 ```
 
 ## シェルスクリプトの活用
