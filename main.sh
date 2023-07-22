@@ -39,7 +39,6 @@ function copy_to_workdir()
 {
   # ファイルをworkdirにコピー
   WORK_FILE_PATH=$WORKDIR/$2
-  echo "copy $1/$2 to $WORK_FILE_PATH"
   cp $1/$2 $WORK_FILE_PATH
 }
 
@@ -49,9 +48,9 @@ function optimize()
   local ext=$2
 
   if [ $ext = "jpg" ]; then
-    docker run -it --rm -v $WORKDIR:/var koboriakira/squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /var /var/$filename
+    docker run -it --rm -v $WORKDIR:/work koboriakira/squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /work /work/$filename
   elif [ $ext = "png" ]; then
-    docker run -it --rm -v $WORKDIR:/var koboriakira/squoosh-cli squoosh-cli --oxipng '{quality:30}' -d /var /var/$filename
+    docker run -it --rm -v $WORKDIR:/work koboriakira/squoosh-cli squoosh-cli --oxipng '{quality:30}' -d /work /work/$filename
   else
     echo "Error! jpg,png以外の画像ファイルは対応していません"
     exit 1
@@ -67,12 +66,14 @@ function move_to_originaldir()
   ext=$3
   force_update=$4
 
+  message="update "
   # force_updateがfalseの場合はファイル名のsuffixに「_squoosh」を付与
   if [ $force_update = false ]; then
     basename=${basename}_squoosh
+    message="create "
   fi
   copy_file_path=$dirname/${basename}.${ext}
-  echo "move $WORK_FILE_PATH to $copy_file_path"
+  echo "${message} $copy_file_path"
   mv -f $WORK_FILE_PATH $copy_file_path
 }
 
@@ -83,7 +84,8 @@ check_workdir
 dirname=$(cd $(dirname $1); pwd) #ディレクトリ
 filename=$(basename $1) #ファイル名
 basename=${filename%.*} #拡張子を除いたファイル名
-ext=${filename##*.} #拡張子
+ext=$(echo ${filename##*.} | tr '[A-Z]' '[a-z]') #拡張子
+
 
 # 上書きフラグ(bool)を取得
 force_update=false
