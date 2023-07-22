@@ -49,9 +49,9 @@ function optimize()
   local ext=$2
 
   if [ $ext = "jpg" ]; then
-    docker run -it --rm -v $WORKDIR:/var squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /var /var/$filename
+    docker run -it --rm -v $WORKDIR:/var koboriakira/squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /var /var/$filename
   elif [ $ext = "png" ]; then
-    docker run -it --rm -v $WORKDIR:/var squoosh-cli squoosh-cli --oxipng '{quality:30}' -d /var /var/$filename
+    docker run -it --rm -v $WORKDIR:/var koboriakira/squoosh-cli squoosh-cli --oxipng '{quality:30}' -d /var /var/$filename
   else
     echo "Error! jpg,png以外の画像ファイルは対応していません"
     exit 1
