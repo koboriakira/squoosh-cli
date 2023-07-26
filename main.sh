@@ -1,5 +1,17 @@
 #!/bin/bash
-# 第1引数に指定されたファイルを、squoosh-cliで圧縮する
+# 指定されたファイルをsquoosh-cliで圧縮する
+
+# 標準入力があるかチェックする
+if [ -p /dev/stdin ]; then
+    # 標準入力がある場合
+    input=$(cat)
+    force_update_option=$1
+else
+    # 標準入力がない場合
+    input=$1
+    force_update_option=$2
+fi
+
 
 function check_workdir() {
   # 環境変数WORKDIRが設定されていない場合は、デフォルト値を設定
@@ -14,6 +26,8 @@ function check_workdir() {
 }
 
 function validate(){
+  local input=$1
+  local force_update_option=$2
   # 引き数がひとつも指定されていない場合はエラー
   if [ $# -eq 0 ]; then
     echo "Error! 引数にファイルを指定してください"
@@ -21,14 +35,14 @@ function validate(){
   fi
 
   # 第1引数のファイルが存在しない場合はエラー
-  if [ ! -e $1 ]; then
+  if [ ! -e $input ]; then
     echo "Error! 指定されたファイルが存在しません"
     exit 1
   fi
 
   # 第2引数は`-f`もしくは`--force`のみ許可
   if [ $# -eq 2 ]; then
-    if [ $2 != "-f" ] && [ $2 != "--force" ]; then
+    if [ $force_update_option != "-f" ] && [ $force_update_option != "--force" ]; then
       echo "Error! 第2引数は`-f`もしくは`--force`のみ許可されています"
       exit 1
     fi
@@ -37,9 +51,11 @@ function validate(){
 
 function copy_to_workdir()
 {
+  local dirname=$1
+  local filename=$2
   # ファイルをworkdirにコピー
-  WORK_FILE_PATH=$WORKDIR/$2
-  cp $1/$2 $WORK_FILE_PATH
+  WORK_FILE_PATH=$WORKDIR/$filename
+  cp $dirname/$filename $WORK_FILE_PATH
 }
 
 function optimize()
@@ -77,12 +93,12 @@ function move_to_originaldir()
   mv -f $WORK_FILE_PATH $copy_file_path
 }
 
-validate $1 $2
+validate $input $force_update_option
 check_workdir
 
 # ファイル名を取得
-dirname=$(cd $(dirname $1); pwd) #ディレクトリ
-filename=$(basename $1) #ファイル名
+dirname=$(cd $(dirname $input); pwd) #ディレクトリ
+filename=$(basename $input) #ファイル名
 basename=${filename%.*} #拡張子を除いたファイル名
 ext=$(echo ${filename##*.} | tr '[A-Z]' '[a-z]') #拡張子
 
@@ -90,7 +106,7 @@ ext=$(echo ${filename##*.} | tr '[A-Z]' '[a-z]') #拡張子
 # 上書きフラグ(bool)を取得
 force_update=false
 if [ $# -eq 2 ]; then
-  if [ $2 = "-f" ] || [ $2 = "--force" ]; then
+  if [ $force_update_option = "-f" ] || [ $force_update_option = "--force" ]; then
     force_update=true
   fi
 fi

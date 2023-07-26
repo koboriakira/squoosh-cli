@@ -17,10 +17,10 @@ docker run --rm -v {画像ファイルを含むディレクトリ}:/var koboriak
 リポジトリの`main.sh`を利用すると、Dockerコマンドを気にせずに画像ファイルを取り扱えます。
 
 ```
-bash main.sh {画像ファイルのパス}
+bash main.sh sample/sample1.jpg
 
 # 上書きでよい場合は、--forceオプションをつける
-bash main.sh {画像ファイルのパス} --force
+bash main.sh sample/sample1.jpg --force
 ```
 
 次のような関数を定義しておけば、簡単にsquoosh-cliが利用できることになります。
