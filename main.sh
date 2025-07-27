@@ -5,7 +5,7 @@
 #   bash main.sh path/to/image.jpg --force   # 元ファイルを上書き
 #   echo "path/to/image.jpg" | bash main.sh  # パイプ入力
 # 
-# 対応形式: jpg, png
+# 対応形式: jpg, jpeg, png
 # 圧縮設定: JPG=mozjpeg(quality:30), PNG=oxipng(quality:30)
 
 # 標準入力があるかチェックする（パイプ入力対応）
@@ -80,14 +80,14 @@ function optimize()
   local filename=$1
   local ext=$2
 
-  if [ $ext = "jpg" ]; then
+  if [ $ext = "jpg" ] || [ $ext = "jpeg" ]; then
     # JPEG最適化（mozjpeg使用）
     docker run --rm -v $WORKDIR:/work koboriakira/squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /work /work/$filename
   elif [ $ext = "png" ]; then
     # PNG最適化（oxipng使用）
     docker run --rm -v $WORKDIR:/work koboriakira/squoosh-cli squoosh-cli --oxipng '{quality:30}' -d /work /work/$filename
   else
-    echo "Error! jpg,png以外の画像ファイルは対応していません"
+    echo "Error! jpg,jpeg,png以外の画像ファイルは対応していません"
     exit 1
     # NOTE: jpg,png以外の画像ファイル、webp形式に変換したいが、うまく動かないことのほうが多そう
     # docker run -it --rm -v $WORKDIR:/var squoosh-cli squoosh-cli --webp auto -d /var /var/$filename
