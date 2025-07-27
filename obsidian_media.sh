@@ -65,7 +65,7 @@ function copy_to_workdir()
 
 # 画像最適化処理
 # 拡張子に応じてDocker経由でsquoosh-cliを実行
-# JPG: mozjpeg（quality:30） / PNG: oxipng（quality:30）
+# JPG: mozjpeg（quality:30） / PNG: quant+oxipng（色数削減 + 最適化）
 function optimize()
 {
   local filename="$1"
@@ -75,8 +75,9 @@ function optimize()
     # JPEG最適化（mozjpeg使用）
     docker run --rm -v "$WORKDIR:/work" koboriakira/squoosh-cli squoosh-cli --mozjpeg '{quality:30}' -d /work "/work/$filename"
   elif [ "$ext" = "png" ]; then
-    # PNG最適化（oxipng使用）
-    docker run --rm -v "$WORKDIR:/work" koboriakira/squoosh-cli squoosh-cli --oxipng '{quality:30}' -d /work "/work/$filename"
+    # PNG最適化（色数削減 + oxipng使用）
+    # 色数を削減してからoxipngで最適化することで、より効果的な圧縮を実現
+    docker run --rm -v "$WORKDIR:/work" koboriakira/squoosh-cli squoosh-cli --quant '{numColors:64}' --oxipng '{}' -d /work "/work/$filename"
   else
     echo "Error! jpg,jpeg,png以外の画像ファイルは対応していません"
     exit 1
@@ -92,19 +93,42 @@ function move_to_originaldir()
   local dirname=$(dirname "$original_file_path")
   local filename=$(basename "$original_file_path")
   local basename=${filename%.*}
-  local ext=$(echo ${filename##*.} | tr '[A-Z]' '[a-z]')
+  local original_ext=$(echo ${filename##*.} | tr '[A-Z]' '[a-z]')
   local force_update="$2"
 
+  # squoosh-cliが生成した実際のファイルを探す
+  # JPEGの場合、.jpeg → .jpg に変換される可能性がある
+  local optimized_file=""
+  if [ "$original_ext" = "jpeg" ]; then
+    # .jpeg の場合、.jpg ファイルが生成される可能性がある
+    if [ -f "$WORKDIR/${basename}.jpg" ]; then
+      optimized_file="$WORKDIR/${basename}.jpg"
+    elif [ -f "$WORKDIR/${basename}.jpeg" ]; then
+      optimized_file="$WORKDIR/${basename}.jpeg"
+    fi
+  else
+    # その他の拡張子の場合は元の拡張子をそのまま使用
+    optimized_file="$WORKDIR/${basename}.${original_ext}"
+  fi
+
+  # 最適化されたファイルが見つからない場合はエラー
+  if [ ! -f "$optimized_file" ]; then
+    echo "Error: 最適化されたファイルが見つかりません: $optimized_file"
+    return 1
+  fi
+
   message="update "
+  local target_ext="$original_ext"
+
   # force_updateがfalseの場合はファイル名のsuffixに「_squoosh」を付与
   if [ "$force_update" = false ]; then
     basename="${basename}_squoosh"
     message="create "
   fi
 
-  copy_file_path="$dirname/${basename}.${ext}"
+  copy_file_path="$dirname/${basename}.${target_ext}"
   echo "${message} $copy_file_path"
-  mv -f "$WORK_FILE_PATH" "$copy_file_path"
+  mv -f "$optimized_file" "$copy_file_path"
 }
 
 # ファイルサイズを人間が読みやすい形式で表示
